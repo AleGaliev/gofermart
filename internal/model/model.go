@@ -2,11 +2,6 @@ package models
 
 import "time"
 
-const (
-	Counter = "counter"
-	Gauge   = "gauge"
-)
-
 type User struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`

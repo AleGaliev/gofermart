@@ -63,30 +63,6 @@ func (j *JWTManager) ValidateToken(tokenString string) (*jwt.RegisteredClaims, e
 	return claims, nil
 }
 
-//func (j *JWTManager) ValidateToken(tokenString string) (*jwt.RegisteredClaims, error) {
-//	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-//			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-//		}
-//		return j.key, nil
-//	})
-//
-//	if err != nil {
-//		return nil, fmt.Errorf("token parsing failed: %w", err)
-//	}
-//
-//	if !token.Valid {
-//		return nil, fmt.Errorf("token is invalid")
-//	}
-//
-//	claims, ok := token.Claims.(*jwt.RegisteredClaims)
-//	if !ok {
-//		return nil, fmt.Errorf("invalid token claims")
-//	}
-//
-//	return claims, nil
-//}
-
 func (j *JWTManager) GetLoginFromToken(tokenString string) (string, error) {
 	claims, err := j.ValidateToken(tokenString)
 	if err != nil {

@@ -24,9 +24,6 @@ type HTTPSendler struct {
 
 func NewAccrualConfig(logger logger, baseURL string) *HTTPSendler {
 	parsedURL, _ := url.Parse(baseURL)
-	fmt.Println(baseURL)
-	fmt.Println(parsedURL.Scheme)
-	fmt.Println(parsedURL.Host)
 	return &HTTPSendler{
 		client: &http.Client{
 			Timeout: 2 * time.Second,
@@ -68,6 +65,8 @@ func (h HTTPSendler) GetInfoOrders(orders string) (models.Order, error) {
 		return order, err
 	}
 	response.Body.Close()
+
+	h.logger.CreateResponseLog(response.StatusCode, int64(len(body)))
 
 	return order, nil
 }
