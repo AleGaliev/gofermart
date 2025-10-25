@@ -13,6 +13,9 @@ func main() {
 		panic(err)
 	}
 
+	if err = serverConfig.DBConfig.CreateMigration(); err != nil {
+		panic(err)
+	}
 	go serverConfig.OrderConsumer.ConsumerRun(context.Background())
 
 	serverConfig.Logger.StartServerLog(serverConfig.AdrHost)

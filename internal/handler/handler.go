@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -73,7 +72,6 @@ func (h *MyHandler) ServeHTTPRegister(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.storage.Register(user); err != nil {
 		failedResponse(w, err.Error(), "", http.StatusConflict)
-		fmt.Println(err)
 		return
 	}
 

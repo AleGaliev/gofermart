@@ -83,7 +83,7 @@ func (p ServerParams) AppConfig() (AppConfig, error) {
 	accrualConfig := accrual.NewAccrualConfig(logServer, p.AccrualSystemAddress)
 	consumerConfig := consumer.NewOrderConsumer(p.ConsumerCountWorkers, accrualConfig, dbStorage)
 
-	r := handler.CreateMyHandler(dbStorage, logServer, "")
+	r := handler.CreateMyHandler(dbStorage, logServer, p.HashKey)
 	return AppConfig{
 		AdrHost:       p.AdrHost,
 		DBConfig:      dbConfig,
