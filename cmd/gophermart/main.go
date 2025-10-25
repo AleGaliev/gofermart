@@ -17,6 +17,8 @@ func main() {
 
 	serverConfig.Logger.StartServerLog(serverConfig.AdrHost)
 	err = http.ListenAndServe(serverConfig.AdrHost, serverConfig.HandlerApp)
-
-	defer serverConfig.DbConfig.Close()
+	if err != nil {
+		panic(err)
+	}
+	defer serverConfig.DBConfig.Close()
 }

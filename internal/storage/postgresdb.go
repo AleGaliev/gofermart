@@ -79,12 +79,12 @@ func (p *PostgresDBStorage) createUser(username, password string) error {
 }
 
 func (p *PostgresDBStorage) Login(user models.User) error {
-	password_hash, err := p.getUserPass(user.Login)
+	passwordHash, err := p.getUserPass(user.Login)
 	if err != nil {
 		return err
 	}
 
-	if !passhash.CheckPasswordHash(user.Password, password_hash) {
+	if !passhash.CheckPasswordHash(user.Password, passwordHash) {
 		return fmt.Errorf("invalid login/password")
 	}
 

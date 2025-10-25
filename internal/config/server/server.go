@@ -30,7 +30,7 @@ type AppConfig struct {
 	HandlerApp    http.Handler
 	OrderConsumer *consumer.OrderConsumer
 	Logger        logger.Logger
-	DbConfig      db.PostgresDB
+	DBConfig      db.PostgresDB
 }
 
 func NewServerParams() ServerParams {
@@ -86,7 +86,7 @@ func (p ServerParams) AppConfig() (AppConfig, error) {
 	r := handler.CreateMyHandler(dbStorage, logServer, p.HashKey)
 	return AppConfig{
 		AdrHost:       p.AdrHost,
-		DbConfig:      dbConfig,
+		DBConfig:      dbConfig,
 		HandlerApp:    r,
 		OrderConsumer: consumerConfig,
 		Logger:        logServer,

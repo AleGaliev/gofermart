@@ -3,7 +3,7 @@ package accrual
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -50,7 +50,7 @@ func (h HTTPSendler) GetInfoOrders(orders string) (models.Order, error) {
 		return order, err
 	}
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 
 	if err != nil {
 		return order, err
