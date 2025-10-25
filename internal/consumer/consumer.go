@@ -38,14 +38,14 @@ func NewOrderConsumer(workers int, rep Rep, storage Storage) *OrderConsumer {
 	}
 }
 
-func (ma *OrderConsumer) ConsumerRun(ctx context.Context) error {
-	ticker := time.NewTicker(time.Duration(ma.checkInterval) * time.Second)
+func (oc *OrderConsumer) ConsumerRun(ctx context.Context) error {
+	ticker := time.NewTicker(time.Duration(oc.checkInterval) * time.Second)
 	defer ticker.Stop()
 	errCh := make(chan error, 1)
 	jobs := make(chan models.Order, 100)
-	for w := 1; w <= ma.workers; w++ {
+	for w := 1; w <= oc.workers; w++ {
 		go func() {
-			if err := ma.ConsumerWorker(jobs); err != nil {
+			if err := oc.ConsumerWorker(jobs); err != nil {
 				errCh <- fmt.Errorf("consumer worker failed: %w", err)
 				log.Printf("Consumer worker failed: %v", err)
 			}
@@ -57,18 +57,16 @@ func (ma *OrderConsumer) ConsumerRun(ctx context.Context) error {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				orders, _ := ma.storage.GetOrderNotFinish()
+				orders, _ := oc.storage.GetOrderNotFinish()
 				for _, m := range orders {
 					jobs <- m
 				}
 			}
 		}
 	}()
+	<-ctx.Done()
+	return nil
 
-	select {
-	case <-ctx.Done():
-		return nil
-	}
 }
 
 func (oc *OrderConsumer) ConsumerWorker(statusOrders <-chan models.Order) error {

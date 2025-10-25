@@ -92,16 +92,16 @@ func (p *PostgresDBStorage) Login(user models.User) error {
 }
 
 func (p *PostgresDBStorage) getUserPass(username string) (string, error) {
-	var password_hash string
+	var passwordHash string
 	ctx, cancel := context.WithTimeout(context.Background(), p.dbConfig.DefaultTimeout*time.Second)
 	defer cancel()
 
 	query := `SELECT password_hash FROM users WHERE username = $1`
-	if err := p.dbConfig.DB.QueryRowContext(ctx, query, username).Scan(&password_hash); err != nil {
-		return password_hash, fmt.Errorf("failed to check user existence: %v", err)
+	if err := p.dbConfig.DB.QueryRowContext(ctx, query, username).Scan(&passwordHash); err != nil {
+		return passwordHash, fmt.Errorf("failed to check user existence: %v", err)
 	}
 
-	return password_hash, nil
+	return passwordHash, nil
 }
 
 func (p *PostgresDBStorage) UploadOrder(orderUser, orderNumber string) error {
