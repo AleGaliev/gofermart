@@ -49,7 +49,7 @@ func (h HTTPSendler) GetInfoOrders(orders string) (models.Order, error) {
 	if err != nil {
 		return order, err
 	}
-
+	defer response.Body.Close()
 	body, err := io.ReadAll(response.Body)
 
 	if err != nil {
@@ -64,7 +64,6 @@ func (h HTTPSendler) GetInfoOrders(orders string) (models.Order, error) {
 	if err = json.Unmarshal(body, &order); err != nil {
 		return order, err
 	}
-	response.Body.Close()
 
 	h.logger.CreateResponseLog(response.StatusCode, int64(len(body)))
 

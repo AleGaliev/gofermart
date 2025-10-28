@@ -132,10 +132,10 @@ func (p *PostgresDBStorage) GetOrder(OrderNumber string) (string, error) {
 	return orderUser, nil
 }
 
-func (p *PostgresDBStorage) GetOrdersUser(login string) ([]models.Order, error) {
+func (p *PostgresDBStorage) GetOrdersUser(login string) ([]models.OrderOut, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), p.dbConfig.DefaultTimeout*time.Second)
 	defer cancel()
-	var orders []models.Order
+	var orders []models.OrderOut
 
 	query := `
         SELECT order_number, accrual_service, status, uploaded_at 
@@ -150,7 +150,7 @@ func (p *PostgresDBStorage) GetOrdersUser(login string) ([]models.Order, error) 
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var order models.Order
+		var order models.OrderOut
 		if err := rows.Scan(&order.OrderNumber, &order.Accrual, &order.Status, &order.UploadedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan order row: %w", err)
 		}
@@ -164,16 +164,16 @@ func (p *PostgresDBStorage) GetOrdersUser(login string) ([]models.Order, error) 
 	return orders, nil
 }
 
-func (p *PostgresDBStorage) GetUserBalance(user string) (models.UserBalance, error) {
+func (p *PostgresDBStorage) GetUserBalance(user string) (models.UserBalanceOut, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), p.dbConfig.DefaultTimeout*time.Second)
 	defer cancel()
 
-	var userBalance models.UserBalance
+	var userBalance models.UserBalanceOut
 	query := `SELECT balance, withdrawn FROM users WHERE username=$1`
 	row := p.dbConfig.DB.QueryRowContext(ctx, query, user)
 
 	if err := row.Scan(&userBalance.Current, &userBalance.Withdrawn); err != nil {
-		return models.UserBalance{}, err
+		return models.UserBalanceOut{}, err
 	}
 	return userBalance, nil
 }
@@ -231,7 +231,7 @@ func (p *PostgresDBStorage) UploadOrderWithdraw(user string, withdraw models.Wit
 	return nil
 }
 
-func (p *PostgresDBStorage) GetUserWithdrawals(user string) ([]models.Withdraw, error) {
+func (p *PostgresDBStorage) GetUserWithdrawals(user string) ([]models.WithdrawOut, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), p.dbConfig.DefaultTimeout*time.Second)
 	defer cancel()
 
@@ -246,9 +246,9 @@ func (p *PostgresDBStorage) GetUserWithdrawals(user string) ([]models.Withdraw, 
 	}
 	defer rows.Close()
 
-	var withdrawals []models.Withdraw
+	var withdrawals []models.WithdrawOut
 	for rows.Next() {
-		var withdraw models.Withdraw
+		var withdraw models.WithdrawOut
 
 		err := rows.Scan(&withdraw.OrderNumber, &withdraw.Sum, &withdraw.ProcessedAt)
 		if err != nil {

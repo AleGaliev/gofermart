@@ -26,8 +26,7 @@ type ServerParams struct {
 }
 
 type AppConfig struct {
-	AdrHost       string
-	HandlerApp    http.Handler
+	Server        *http.Server
 	OrderConsumer *consumer.OrderConsumer
 	Logger        logger.Logger
 	DBConfig      db.PostgresDB
@@ -81,13 +80,17 @@ func (p ServerParams) AppConfig() (AppConfig, error) {
 
 	dbStorage := storage.NewPostgresDBStorage(dbConfig)
 	accrualConfig := accrual.NewAccrualConfig(logServer, p.AccrualSystemAddress)
-	consumerConfig := consumer.NewOrderConsumer(p.ConsumerCountWorkers, accrualConfig, dbStorage)
+	consumerConfig := consumer.NewOrderConsumer(p.ConsumerCountWorkers, accrualConfig, dbStorage, logServer)
 
 	r := handler.CreateMyHandler(dbStorage, logServer, p.HashKey)
+	server := &http.Server{
+		Addr:    p.AdrHost,
+		Handler: r,
+	}
+
 	return AppConfig{
-		AdrHost:       p.AdrHost,
+		Server:        server,
 		DBConfig:      dbConfig,
-		HandlerApp:    r,
 		OrderConsumer: consumerConfig,
 		Logger:        logServer,
 	}, err

@@ -17,8 +17,8 @@ const (
 			CREATE TABLE IF NOT EXISTS users (
 				username VARCHAR(50) NOT NULL,
 				password_hash VARCHAR(200) NOT NULL,
-			    balance float,
-				withdrawn float,
+			    balance DECIMAL(20, 2),
+				withdrawn DECIMAL(20, 2),
 				created_at TIMESTAMP WITH TIME ZONE,
 				uploaded_at TIMESTAMP WITH TIME ZONE
 			);
@@ -26,13 +26,13 @@ const (
 				order_user VARCHAR(50) NOT NULL,
 				order_number VARCHAR(50) UNIQUE,
 				uploaded_at TIMESTAMP WITH TIME ZONE,
-				accrual_service float,
+				accrual_service DECIMAL(20, 2),
 				status text
 			);
 			CREATE TABLE IF NOT EXISTS withdrawals (
 				order_number VARCHAR(50),
 				order_user VARCHAR(50),
-				sum_withdrawals float,
+				sum_withdrawals DECIMAL(20, 2),
 				processed_at TIMESTAMP WITH TIME ZONE
 			)
 	`

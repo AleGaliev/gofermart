@@ -11,6 +11,7 @@ import (
 	model "github.com/AleGaliev/gofermart/internal/model"
 	"github.com/AleGaliev/gofermart/internal/service/passhash"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -324,7 +325,7 @@ func TestPostgresDBStorage_GetOrdersUser(t *testing.T) {
 		name           string
 		login          string
 		mock           func()
-		expectedOrders []model.Order
+		expectedOrders []model.OrderOut
 		expectedError  bool
 	}{
 		{
@@ -338,7 +339,7 @@ func TestPostgresDBStorage_GetOrdersUser(t *testing.T) {
 					WithArgs("user1").
 					WillReturnRows(rows)
 			},
-			expectedOrders: []model.Order{
+			expectedOrders: []model.OrderOut{
 				{OrderNumber: "2377225624", Accrual: 100.5, Status: "PROCESSED", UploadedAt: now},
 				{OrderNumber: "12345678903", Accrual: 50.0, Status: "NEW", UploadedAt: now.Add(-time.Hour)},
 			},
@@ -379,7 +380,7 @@ func TestPostgresDBStorage_GetUserBalance(t *testing.T) {
 		name            string
 		user            string
 		mock            func()
-		expectedBalance model.UserBalance
+		expectedBalance model.UserBalanceOut
 		expectedError   bool
 	}{
 		{
@@ -390,7 +391,7 @@ func TestPostgresDBStorage_GetUserBalance(t *testing.T) {
 					WithArgs("user1").
 					WillReturnRows(sqlmock.NewRows([]string{"balance", "withdrawn"}).AddRow(100.5, 50.0))
 			},
-			expectedBalance: model.UserBalance{Current: 100.5, Withdrawn: 50.0},
+			expectedBalance: model.UserBalanceOut{Current: 100.5, Withdrawn: 50.0},
 			expectedError:   false,
 		},
 		{
@@ -401,7 +402,7 @@ func TestPostgresDBStorage_GetUserBalance(t *testing.T) {
 					WithArgs("nonexistent").
 					WillReturnError(sql.ErrNoRows)
 			},
-			expectedBalance: model.UserBalance{},
+			expectedBalance: model.UserBalanceOut{},
 			expectedError:   true,
 		},
 	}
@@ -437,7 +438,7 @@ func TestPostgresDBStorage_UploadOrderWithdraw(t *testing.T) {
 
 	withdraw := model.Withdraw{
 		OrderNumber: "12345678903",
-		Sum:         50.0,
+		Sum:         decimal.NewFromFloat32(50.0),
 	}
 
 	tests := []struct {
@@ -457,10 +458,10 @@ func TestPostgresDBStorage_UploadOrderWithdraw(t *testing.T) {
 					WithArgs("12345678903", "user1", sqlmock.AnyArg(), 0, "NEW").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				sqlMock.ExpectExec("UPDATE users").
-					WithArgs(50.0, "user1", sqlmock.AnyArg()).
+					WithArgs(decimal.NewFromFloat32(50.0), "user1", sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				sqlMock.ExpectExec("INSERT INTO withdrawals").
-					WithArgs("12345678903", "user1", 50.0, sqlmock.AnyArg()).
+					WithArgs("12345678903", "user1", decimal.NewFromFloat32(50.0), sqlmock.AnyArg()).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				sqlMock.ExpectCommit()
 			},
@@ -516,7 +517,7 @@ func TestPostgresDBStorage_GetUserWithdrawals(t *testing.T) {
 		name              string
 		user              string
 		mock              func()
-		expectedWithdraws []model.Withdraw
+		expectedWithdraws []model.WithdrawOut
 		expectedError     bool
 	}{
 		{
@@ -530,7 +531,7 @@ func TestPostgresDBStorage_GetUserWithdrawals(t *testing.T) {
 					WithArgs("user1").
 					WillReturnRows(rows)
 			},
-			expectedWithdraws: []model.Withdraw{
+			expectedWithdraws: []model.WithdrawOut{
 				{OrderNumber: "12345678903", Sum: 50.0, ProcessedAt: now},
 				{OrderNumber: "346436439", Sum: 25.5, ProcessedAt: now.Add(-time.Hour)},
 			},
@@ -623,7 +624,7 @@ func TestPostgresDBStorage_UpdateOrderAndBalance(t *testing.T) {
 		OrderNumber: "9278923470",
 		OrderUser:   "user1",
 		Status:      "PROCESSED",
-		Accrual:     100.5,
+		Accrual:     decimal.NewFromFloat32(100.5),
 	}
 
 	tests := []struct {
@@ -638,10 +639,10 @@ func TestPostgresDBStorage_UpdateOrderAndBalance(t *testing.T) {
 			mock: func() {
 				sqlMock.ExpectBegin()
 				sqlMock.ExpectExec("UPDATE orders").
-					WithArgs("PROCESSED", 100.5, "9278923470").
+					WithArgs("PROCESSED", decimal.NewFromFloat32(100.5), "9278923470").
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				sqlMock.ExpectExec("UPDATE users").
-					WithArgs(100.5, "user1").
+					WithArgs(decimal.NewFromFloat32(100.5), "user1").
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				sqlMock.ExpectCommit()
 			},
@@ -653,7 +654,7 @@ func TestPostgresDBStorage_UpdateOrderAndBalance(t *testing.T) {
 			mock: func() {
 				sqlMock.ExpectBegin()
 				sqlMock.ExpectExec("UPDATE orders").
-					WithArgs("PROCESSED", 100.5, "9278923470").
+					WithArgs("PROCESSED", decimal.NewFromFloat32(100.5), "9278923470").
 					WillReturnError(errors.New("db error"))
 				sqlMock.ExpectRollback()
 			},

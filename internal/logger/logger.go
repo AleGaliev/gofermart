@@ -50,3 +50,10 @@ func (l Logger) CreateResponseLog(statusCode int, large int64) {
 		"large", large,
 	)
 }
+
+func (l Logger) CreateErrorLog(service, message string) {
+	l.logger.Errorw(
+		"message",
+		"service", service,
+	)
+}

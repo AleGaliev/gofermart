@@ -12,6 +12,7 @@ import (
 	"github.com/AleGaliev/gofermart/internal/mocks"
 	model "github.com/AleGaliev/gofermart/internal/model"
 	"github.com/golang/mock/gomock"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -191,7 +192,7 @@ func TestMyHandler_ServeHTTPBalance(t *testing.T) {
 			name:      "Successful balance retrieval",
 			userLogin: "testuser",
 			setupMocks: func() {
-				balance := model.UserBalance{
+				balance := model.UserBalanceOut{
 					Current:   100.5,
 					Withdrawn: 50.0,
 				}
@@ -203,7 +204,7 @@ func TestMyHandler_ServeHTTPBalance(t *testing.T) {
 			name:      "Storage error",
 			userLogin: "testuser",
 			setupMocks: func() {
-				mockStorage.EXPECT().GetUserBalance("testuser").Return(model.UserBalance{}, errors.New("storage error"))
+				mockStorage.EXPECT().GetUserBalance("testuser").Return(model.UserBalanceOut{}, errors.New("storage error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -225,8 +226,11 @@ func TestMyHandler_ServeHTTPBalance(t *testing.T) {
 				var response model.UserBalance
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				assert.NoError(t, err)
-				assert.Equal(t, float32(100.5), response.Current)
-				assert.Equal(t, float32(50.0), response.Withdrawn)
+				expectedCurrent, _ := decimal.NewFromString("100.5")
+				expectedWithdrawn, _ := decimal.NewFromString("50.0")
+
+				assert.True(t, expectedCurrent.Equal(response.Current))
+				assert.True(t, expectedWithdrawn.Equal(response.Withdrawn))
 			}
 		})
 	}
@@ -350,7 +354,7 @@ func TestMyHandler_ServeHTTPOrdersInfo(t *testing.T) {
 			name:      "Successful orders retrieval",
 			userLogin: "testuser",
 			setupMocks: func() {
-				orders := []model.Order{
+				orders := []model.OrderOut{
 					{
 						OrderNumber: "12345678903",
 						Status:      "PROCESSED",
@@ -368,14 +372,15 @@ func TestMyHandler_ServeHTTPOrdersInfo(t *testing.T) {
 				assert.Len(t, response, 1)
 				assert.Equal(t, "12345678903", response[0].OrderNumber)
 				assert.Equal(t, "PROCESSED", response[0].Status)
-				assert.Equal(t, float32(100.0), response[0].Accrual)
+				expectedAccrual := decimal.NewFromFloat(100.0)
+				assert.True(t, expectedAccrual.Equal(response[0].Accrual))
 			},
 		},
 		{
 			name:      "No orders found",
 			userLogin: "testuser",
 			setupMocks: func() {
-				mockStorage.EXPECT().GetOrdersUser("testuser").Return([]model.Order{}, nil)
+				mockStorage.EXPECT().GetOrdersUser("testuser").Return([]model.OrderOut{}, nil)
 			},
 			expectedStatus: http.StatusNoContent,
 			checkResponse:  nil,
@@ -384,7 +389,7 @@ func TestMyHandler_ServeHTTPOrdersInfo(t *testing.T) {
 			name:      "Storage error",
 			userLogin: "testuser",
 			setupMocks: func() {
-				mockStorage.EXPECT().GetOrdersUser("testuser").Return([]model.Order{}, errors.New("storage error"))
+				mockStorage.EXPECT().GetOrdersUser("testuser").Return([]model.OrderOut{}, errors.New("storage error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			checkResponse:  nil,
@@ -414,7 +419,7 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 	tests := []struct {
 		name           string
 		userLogin      string
-		withdraw       model.Withdraw
+		withdraw       model.WithdrawOut
 		contentType    string
 		requestBody    string
 		setupMocks     func(*mocks.MockStorage, *mocks.MockJWTManager)
@@ -423,13 +428,13 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 		{
 			name:      "Successful withdraw",
 			userLogin: "testuser",
-			withdraw: model.Withdraw{
+			withdraw: model.WithdrawOut{
 				OrderNumber: "12345678903",
 				Sum:         50.0,
 			},
 			contentType: "application/json",
 			setupMocks: func(ms *mocks.MockStorage, mj *mocks.MockJWTManager) {
-				userBalance := model.UserBalance{
+				userBalance := model.UserBalanceOut{
 					Current:   100.0,
 					Withdrawn: 0.0,
 				}
@@ -444,7 +449,7 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 		{
 			name:           "Invalid content type",
 			userLogin:      "testuser",
-			withdraw:       model.Withdraw{},
+			withdraw:       model.WithdrawOut{},
 			contentType:    "text/plain",
 			setupMocks:     func(ms *mocks.MockStorage, mj *mocks.MockJWTManager) {},
 			expectedStatus: http.StatusBadRequest,
@@ -460,7 +465,7 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 		{
 			name:      "Invalid order number",
 			userLogin: "testuser",
-			withdraw: model.Withdraw{
+			withdraw: model.WithdrawOut{
 				OrderNumber: "123",
 				Sum:         50.0,
 			},
@@ -471,13 +476,13 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 		{
 			name:      "Insufficient funds",
 			userLogin: "testuser",
-			withdraw: model.Withdraw{
+			withdraw: model.WithdrawOut{
 				OrderNumber: "12345678903",
 				Sum:         1000.0,
 			},
 			contentType: "application/json",
 			setupMocks: func(ms *mocks.MockStorage, mj *mocks.MockJWTManager) {
-				userBalance := model.UserBalance{
+				userBalance := model.UserBalanceOut{
 					Current:   100.0,
 					Withdrawn: 0.0,
 				}
@@ -488,13 +493,13 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 		{
 			name:      "Order already exists for withdraw",
 			userLogin: "testuser",
-			withdraw: model.Withdraw{
+			withdraw: model.WithdrawOut{
 				OrderNumber: "12345678903",
 				Sum:         50.0,
 			},
 			contentType: "application/json",
 			setupMocks: func(ms *mocks.MockStorage, mj *mocks.MockJWTManager) {
-				userBalance := model.UserBalance{
+				userBalance := model.UserBalanceOut{
 					Current:   100.0,
 					Withdrawn: 0.0,
 				}
@@ -506,26 +511,26 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 		{
 			name:      "Error getting user balance",
 			userLogin: "testuser",
-			withdraw: model.Withdraw{
+			withdraw: model.WithdrawOut{
 				OrderNumber: "12345678903",
 				Sum:         50.0,
 			},
 			contentType: "application/json",
 			setupMocks: func(ms *mocks.MockStorage, mj *mocks.MockJWTManager) {
-				ms.EXPECT().GetUserBalance("testuser").Return(model.UserBalance{}, errors.New("database error"))
+				ms.EXPECT().GetUserBalance("testuser").Return(model.UserBalanceOut{}, errors.New("database error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
 			name:      "Error checking order existence",
 			userLogin: "testuser",
-			withdraw: model.Withdraw{
+			withdraw: model.WithdrawOut{
 				OrderNumber: "12345678903",
 				Sum:         50.0,
 			},
 			contentType: "application/json",
 			setupMocks: func(ms *mocks.MockStorage, mj *mocks.MockJWTManager) {
-				userBalance := model.UserBalance{
+				userBalance := model.UserBalanceOut{
 					Current:   100.0,
 					Withdrawn: 0.0,
 				}
@@ -537,13 +542,13 @@ func TestMyHandler_ServeHTTPBalanceWithDraw(t *testing.T) {
 		{
 			name:      "Error uploading withdraw",
 			userLogin: "testuser",
-			withdraw: model.Withdraw{
+			withdraw: model.WithdrawOut{
 				OrderNumber: "12345678903",
 				Sum:         50.0,
 			},
 			contentType: "application/json",
 			setupMocks: func(ms *mocks.MockStorage, mj *mocks.MockJWTManager) {
-				userBalance := model.UserBalance{
+				userBalance := model.UserBalanceOut{
 					Current:   100.0,
 					Withdrawn: 0.0,
 				}
@@ -612,7 +617,7 @@ func TestMyHandler_ServeHTTPWithdrawals(t *testing.T) {
 			name:      "Successful withdrawals retrieval",
 			userLogin: "testuser",
 			setupMocks: func() {
-				withdrawals := []model.Withdraw{
+				withdrawals := []model.WithdrawOut{
 					{
 						OrderNumber: "12345678903",
 						Sum:         50.0,
@@ -628,14 +633,15 @@ func TestMyHandler_ServeHTTPWithdrawals(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Len(t, response, 1)
 				assert.Equal(t, "12345678903", response[0].OrderNumber)
-				assert.Equal(t, float32(50.0), response[0].Sum)
+				expectedAccrual := decimal.NewFromFloat(50.0)
+				assert.True(t, expectedAccrual.Equal(response[0].Sum))
 			},
 		},
 		{
 			name:      "No withdrawals found",
 			userLogin: "testuser",
 			setupMocks: func() {
-				mockStorage.EXPECT().GetUserWithdrawals("testuser").Return([]model.Withdraw{}, nil)
+				mockStorage.EXPECT().GetUserWithdrawals("testuser").Return([]model.WithdrawOut{}, nil)
 			},
 			expectedStatus: http.StatusNoContent,
 			checkResponse:  nil,
@@ -644,7 +650,7 @@ func TestMyHandler_ServeHTTPWithdrawals(t *testing.T) {
 			name:      "Storage error",
 			userLogin: "testuser",
 			setupMocks: func() {
-				mockStorage.EXPECT().GetUserWithdrawals("testuser").Return([]model.Withdraw{}, errors.New("storage error"))
+				mockStorage.EXPECT().GetUserWithdrawals("testuser").Return([]model.WithdrawOut{}, errors.New("storage error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			checkResponse:  nil,

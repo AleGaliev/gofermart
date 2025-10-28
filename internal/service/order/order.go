@@ -5,12 +5,13 @@ import (
 	"strconv"
 
 	models "github.com/AleGaliev/gofermart/internal/model"
+	"github.com/shopspring/decimal"
 )
 
 type Storage interface {
 	UploadOrder(OrderUser, OrderNumber string) error
 	GetOrder(OrderNumber string) (string, error)
-	GetUserBalance(user string) (models.UserBalance, error)
+	GetUserBalance(user string) (models.UserBalanceOut, error)
 	UploadOrderWithdraw(user string, withdraw models.Withdraw) error
 }
 
@@ -59,7 +60,9 @@ func UploadOrderWithdraw(user string, withdraw models.Withdraw, storage Storage)
 		return err
 	}
 
-	if balance.Current < withdraw.Sum {
+	balanceCurrentDecimal := decimal.NewFromFloat32(balance.Current)
+
+	if balanceCurrentDecimal.LessThan(withdraw.Sum) {
 		return fmt.Errorf("insufficient funds")
 	}
 

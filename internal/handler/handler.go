@@ -23,9 +23,9 @@ type Storage interface {
 	Login(user models.User) error
 	UploadOrder(orderUser, orderNumber string) error
 	GetOrder(OrderNumber string) (string, error)
-	GetOrdersUser(user string) ([]models.Order, error)
-	GetUserBalance(user string) (models.UserBalance, error)
-	GetUserWithdrawals(user string) ([]models.Withdraw, error)
+	GetOrdersUser(user string) ([]models.OrderOut, error)
+	GetUserBalance(user string) (models.UserBalanceOut, error)
+	GetUserWithdrawals(user string) ([]models.WithdrawOut, error)
 	UploadOrderWithdraw(user string, withdraw models.Withdraw) error
 }
 type MyHandler struct {
@@ -197,7 +197,6 @@ func (h *MyHandler) ServeHTTPOrdersInfo(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("content-type", "application/json ")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonBytes)
-
 }
 
 func (h *MyHandler) ServeHTTPWithdraw(w http.ResponseWriter, r *http.Request) {
