@@ -55,5 +55,6 @@ func (l Logger) CreateErrorLog(service, message string) {
 	l.logger.Errorw(
 		"message",
 		"service", service,
+		"error", message,
 	)
 }
